@@ -47,6 +47,11 @@
 <script>
 export default {
   URL: "http://localhost:3000",
+  data(){
+    return {
+      adding: false
+    }
+  },
   methods: {
     submitFile() {
       const formData = new FormData(this.$refs.formElem);

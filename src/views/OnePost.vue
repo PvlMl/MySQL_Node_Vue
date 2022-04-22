@@ -58,7 +58,8 @@ export default {
       if (!confirm("Are you sure?")) return;
       fetch(this.$options.URL + "/delete/" + this.$route.params.id, {
         method: "DELETE"
-      }).then(res => {if(res) this.$router.push('/')})
+      })
+      .then(res => {if(res.statusText==="OK") this.$router.push('/')})
     },
     openPopup(){
       this.isPopupOpen = true;
@@ -69,7 +70,7 @@ export default {
   },
   computed: {
     getData(){
-      return this.post.postDate.split('T')[0];
+      return this.post.createdAt.split('T')[0];
     }
   }
 };

@@ -31,7 +31,7 @@
         />
       </div>
 
-      <div class="spinner-border m-5" role="status" v-if="adding">
+      <div class="spinner-border m-5" role="status" v-if="false">
         <span class="sr-only"></span>
       </div>
       <input
@@ -65,7 +65,7 @@ export default {
         method: "PUT",
         body: formData,
       })
-      .then(res => {if(res.ok) setTimeout(() => {this.$router.push('/')}, 1000)}) // очень костыльно
+      .then(res => {if(res.statusText==="OK") this.$router.push('/')})
       .finally(this.$emit('closePopup'));
       this.$refs.formElem.reset();
     },

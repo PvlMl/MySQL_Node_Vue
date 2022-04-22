@@ -25,7 +25,7 @@ export default {
   },
   computed: {
     getData(){
-      return this.post.postDate.split('T')[0];
+      return this.post.createdAt.split('T')[0];
     }
   }
 }

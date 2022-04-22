@@ -1,86 +1,110 @@
-const mysql = require("mysql2");
+const { Sequelize, DataTypes } = require('sequelize');
 const express = require("express");
 const cors = require("cors");
-const app = express();
 const busboy = require("busboy"); 
+
+const app = express();
+const urlencodedParser = express.urlencoded({extended: false});
 
 app.use(cors());
 
-// CREATE DATABASE [IF NOT EXISTS] postsdb;
-
-// CREATE TABLE posts
-// (
-//   id MEDIUMINT AUTO_INCREMENT NOT NULL PRIMARY KEY,
-//   title VARCHAR(30) NOT NULL,
-//   postBody TEXT NOT NULL,
-//   postDate Date NOT NULL,  
-//   imageLink VARCHAR(255)
-// );
-
-const pool = mysql.createPool({
-  connectionLimit: 5,
+const sequelize = new Sequelize("postsdb", "root", "123321", {
+  dialect: "mysql",
   host: "localhost",
-  user: "root",
-  database: "postsdb",
-  password: ""
+  define: {
+    timestamps: true
+  }
 });
- 
-app.get("/", function(req, res){
-  pool.query("SELECT * FROM posts", function(err, data) {
-    if(err) return console.log(err);
-    res.send(data);
+
+const User = sequelize.define("2post", {
+    id: {
+      type: Sequelize.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false
+    },
+    title: {
+      type: Sequelize.STRING,
+      allowNull: false
+    },
+    postBody: {
+      type: Sequelize.TEXT,
+      allowNull: false
+    },
+    imageLink: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      createdAt: { 
+        type: DataTypes.DATEONLY,
+        allowNull: false,
+        defaultValue: Sequelize.NOW
+     }
   });
+
+  sequelize.sync().then(()=>{
+    app.listen(3000, function(){
+      console.log("Сервер ожидает подключения...");
+    });
+  }).catch(err=>console.log(err));
+
+  app.get("/", function(req, res){
+    User.findAll({raw: true }).then(data=>{
+      res.send(data);
+    }).catch(err=>console.log(err));
 });
 
 app.get("/post/:id", function(req, res){
-  const id = req.params.id;
-  pool.query("SELECT * FROM posts WHERE id=?",id ,function(err, data) {
-    if(err) return console.log(err);
-    res.send(data);
-  });
+    const id = req.params.id;
+    User.findAll({where:{id}, raw: true }).then(data=>{
+      res.send(data);
+    }).catch(err=>console.log(err));
 });
 
-app.post("/add", function (req, res) {
-  const itemData = {}
-  const bb = busboy({ headers: req.headers });
+app.post("/add", urlencodedParser, function (req, res) {
+         
+    if(!req.body) return res.sendStatus(400);
+         
+    const itemData = {};
+
+    const bb = busboy({ headers: req.headers });
             bb.on('field', (name, val) => {
               itemData[name] = val;
             });
+
             bb.on('close', () => {
-              pool.query("INSERT INTO posts(title, postBody, imageLink, postDate) VALUES (?,?,?,CURDATE())", 
-              [itemData.title, itemData.text, itemData.image],
-               function(err) {
-                if(err) return console.log(err);
-              });
-              res.send();
-           });
-  req.pipe(bb);
+                console.log(itemData)
+                User.create({title: itemData.title, postBody: itemData.text, imageLink: itemData.image}).then(()=>{
+                    res.send();
+                  }).catch(err=>console.log(err));
+             });
+    req.pipe(bb);
 });
 
 app.delete("/delete/:id", function(req, res){
   const id = req.params.id;
-  pool.query("DELETE FROM posts WHERE id=?", [id], function(err, data) {
-    if(err) return console.log(err);
-    res.send(data);
-  });
+  User.destroy({where: {id} }).then(() => {
+    res.send("OK")
+  }).catch(err=>console.log(err));
 });
-app.put("/edit/:id", function(req, res){
-  const itemData = {}
+
+app.put("/edit/:id", urlencodedParser, function (req, res) {
+         
+  if(!req.body) return res.sendStatus(400);
+       
+  const itemData = {};
+
   const bb = busboy({ headers: req.headers });
-            bb.on('field', (name, val) => {
-              itemData[name] = val;
-            });
-            bb.on('close', () => {
-              pool.query("UPDATE posts SET title=?, postBody=?, imageLink=? WHERE id=?", 
-              [itemData.title, itemData.text, itemData.image, req.params.id],
-               function(err) {
-                if(err) return console.log(err);
-              });
-              res.send();
+          bb.on('field', (name, val) => {
+            itemData[name] = val;
+          });
+          const id = req.params.id;
+          bb.on('close', () => {
+              console.log(itemData)
+              User.update({title: itemData.title, postBody: itemData.text, imageLink: itemData.image},
+                {where: {id} }).then(()=>{
+                  res.send("OK");
+                }).catch(err=>console.log(err));
            });
   req.pipe(bb);
-});
- 
-app.listen(3000, function(){
-  console.log("waiting for a connection...");
 });
